@@ -2369,6 +2369,16 @@ class QUICHE_EXPORT QuicConnection
   // The minimum ack delay time advertised to the peer via transport parameter.
   QuicTime::Delta local_min_ack_delay_ = QuicTime::Delta::Zero();
 
+  // Logging State variables
+  void LogNetworkMetrics();
+  QuicTime::Delta kMetricsLogInterval_ = QuicTime::Delta::FromSeconds(1);
+  // Stores the timestamp of the last log event to calculate deltas.
+  QuicTime last_log_time_ = QuicTime::Zero();
+  // Stores the total bytes sent at the last log event.
+  QuicByteCount last_log_total_bytes_sent_ = 0;
+  // Stores the total stream bytes received at the last log event.
+  QuicByteCount last_log_total_stream_bytes_received_ = 0;
+
   std::unique_ptr<MultiPortStats> multi_port_stats_;
 
   // Server addresses that are known to the client.

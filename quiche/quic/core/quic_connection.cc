@@ -2237,11 +2237,86 @@ bool QuicConnection::OnBlockedFrame(const QuicBlockedFrame& frame) {
   return connected_;
 }
 
+void QuicConnection::LogNetworkMetrics() {
+  if (!connected_) {
+    return;
+  }
+
+  // --- Get Current State Snapshot ---
+  const QuicTime now = clock_->ApproximateNow();
+
+  // Log every ~1 second
+  if (now - last_log_time_ < kMetricsLogInterval_) {
+    return;
+  }
+
+  // --- Get Live Objects ---
+  const RttStats* rtt_stats = sent_packet_manager_.GetRttStats();
+  const SendAlgorithmInterface* send_alg = sent_packet_manager_.GetSendAlgorithm();
+
+  const QuicConnectionStats& s = GetStats(); // Updates s.srtt_us, s.estimated_bandwidth, etc.
+
+  QuicByteCount cwnd_bytes = sent_packet_manager_.GetCongestionWindowInBytes();
+  QuicByteCount bytes_in_flight = sent_packet_manager_.GetBytesInFlight();
+  QuicBandwidth pacing_rate = sent_packet_manager_.GetPacingRate();
+  std::string cc_state = sent_packet_manager_.GetDebugState();
+
+  // --- Calculate Interval Rates (Throughput/Goodput) ---
+  QuicBandwidth throughput_bps = QuicBandwidth::Zero();
+  QuicBandwidth goodput_bps = QuicBandwidth::Zero();
+  const QuicTime::Delta interval = now - last_log_time_;
+
+  if (last_log_time_ != QuicTime::Zero() && !interval.IsZero()) {
+    // Throughput = all bytes sent (including headers/retrans) in the interval
+    QuicByteCount sent_delta = s.bytes_sent - last_log_total_bytes_sent_;
+    throughput_bps = QuicBandwidth::FromBytesAndTimeDelta(sent_delta, interval);
+
+    // Goodput = unique application stream bytes received in the interval
+    QuicByteCount received_delta =
+        s.stream_bytes_received - last_log_total_stream_bytes_received_;
+    goodput_bps = QuicBandwidth::FromBytesAndTimeDelta(received_delta, interval);
+  }
+
+  // --- Update State for Next Interval ---
+  last_log_time_ = now;
+  last_log_total_bytes_sent_ = s.bytes_sent;
+  last_log_total_stream_bytes_received_ = s.stream_bytes_received;
+
+// --- Emit JSON Log Line ---
+  // Use QUIC_VLOG(1) to enable this log at runtime with the --v=1 flag.
+  QUIC_VLOG(1) << ENDPOINT << "METRICS_LOG {"
+                << "\"time_ms\":" << (now - s.connection_creation_time).ToMilliseconds()
+                << ",\"cwnd_bytes\":" << cwnd_bytes
+                << ",\"bytes_in_flight\":" << bytes_in_flight
+                << ",\"pacing_rate_bps\":" << pacing_rate.ToBitsPerSecond()
+                << ",\"cc_state\":\"" << cc_state << "\""
+                << ",\"srtt_ms\":" << s.srtt_us / 1000
+                << ",\"latest_rtt_us\":" << rtt_stats->latest_rtt().ToMilliseconds()
+                << ",\"min_rtt_ms\":" << s.min_rtt_us / 1000
+                << ",\"est_bw_bps\":" << s.estimated_bandwidth.ToBitsPerSecond()
+                << ",\"throughput_bps\":" << throughput_bps.ToBitsPerSecond()
+                << ",\"goodput_bps\":" << goodput_bps.ToBitsPerSecond()
+                << ",\"packets_lost\":" << s.packets_lost
+                << ",\"packets_retrans\":" << s.packets_retransmitted
+                << ",\"bytes_retrans\":" << s.bytes_retransmitted
+                << ",\"total_packets_sent\":" << s.packets_sent
+                << ",\"total_bytes_sent\":" << s.bytes_sent
+                << ",\"total_packets_rcvd\":" << s.packets_received
+                << ",\"total_bytes_rcvd\":" << s.stream_bytes_received
+                << ",\"ecn_ce_rcvd\":" << s.num_ecn_marks_received.ce
+                << "}";
+}
+
 void QuicConnection::OnPacketComplete() {
   // Don't do anything if this packet closed the connection.
   if (!connected_) {
     ClearLastFrames();
     return;
+  }
+
+  // NOTE: Only log from the client perspective
+  if (perspective_ == Perspective::IS_CLIENT) {
+    LogNetworkMetrics();
   }
 
   QUIC_DVLOG(1) << ENDPOINT << "Got"
