@@ -19,11 +19,13 @@ fi
 # --- 2. Setup Log File ---
 
 # Create a unique log file for this test run, e.g., "performance_log_BBRR.txt"
-LOG_FILE="performance_log_${CC_ALGORITHM}.txt"
-echo "Starting test for $CC_ALGORITHM. Output will be in ${LOG_FILE}"
+CLIENT_LOG_FILE="performance_log_${CC_ALGORITHM}_client.txt"
+SERVER_LOG_FILE="performance_log_${CC_ALGORITHM}_server.txt"
+echo "Starting test for $CC_ALGORITHM. Output will be in ${CLIENT_LOG_FILE} and ${SERVER_LOG_FILE}"
 
 # Write a header *into* the log file (overwrites old file)
-echo "--- Test for Congestion Control Algorithm: $CC_ALGORITHM ---" > ${LOG_FILE}
+echo "--- Test for Congestion Control Algorithm: $CC_ALGORITHM ---" > ${CLIENT_LOG_FILE}
+echo "--- Test for Congestion Control Algorithm: $CC_ALGORITHM ---" > ${SERVER_LOG_FILE}
 
 # --- 3. Create Certificates (if they don't exist) ---
 if [ ! -f cert.pem ]; then
@@ -39,7 +41,10 @@ echo "Starting server in dynamic response mode..."
   --port=4433 \
   --certificate_file=./cert.pem \
   --key_file=./key.pem \
-  --generate_dynamic_responses=true &
+  --generate_dynamic_responses=true \
+  --v=1 \
+  --stderrthreshold=0 \
+  >> ${SERVER_LOG_FILE} 2>&1 &
 
 SERVER_PID=$!
 echo "Server started with PID ${SERVER_PID}"
@@ -56,11 +61,11 @@ echo "Running client and logging..."
   --drop_response_body=true \
   --connection_options=$CC_ALGORITHM \
   https://localhost:4433/104857600 \
-  >> ${LOG_FILE} 2>&1
+  >> ${CLIENT_LOG_FILE} 2>&1
 
 # --- 6. Stop Server ---
 echo "Test complete. Stopping server..."
 kill $SERVER_PID
 
-echo "Done. Logs are in ${LOG_FILE}"
-echo "Run 'cat ${LOG_FILE}' to see the results."
+echo "Done. Logs are in ${SERVER_LOG_FILE} and ${CLIENT_LOG_FILE}"
+echo "Run 'cat ${CLIENT_LOG_FILE}' to see the results."
