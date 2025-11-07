@@ -276,6 +276,8 @@ void QuicSentPacketManager::ApplyConnectionOptions(
     cc_type = kRenoBytes;
   } else if (ContainsQuicTag(connection_options, kQBIC)) {
     cc_type = kCubicBytes;
+  } else if (ContainsQuicTag(connection_options, kLLMX)) {
+    cc_type = kLLM;
   }
   // This function is only used in server experiments, so do not apply the
   // client-only PRGC tag.

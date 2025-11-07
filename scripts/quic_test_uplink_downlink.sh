@@ -3,7 +3,7 @@
 # --- 1. Set and Validate Algorithm ---
 
 # List of valid congestion control algorithms
-VALID_ALGORITHMS="QBIC RENO BBRR B2ON PRGC"
+VALID_ALGORITHMS="QBIC RENO BBRR B2ON PRGC LLMX"
 
 # Set default algorithm to QBIC if no argument is provided
 DEFAULT_ALGORITHM="QBIC"
@@ -12,7 +12,7 @@ CC_ALGORITHM=${1:-$DEFAULT_ALGORITHM}
 # Check if the chosen algorithm is in the valid list
 if ! echo "$VALID_ALGORITHMS" | grep -w -q "$CC_ALGORITHM"; then
     echo "Error: Invalid algorithm '$CC_ALGORITHM'."
-    echo "Usage: $0 [QBIC|RENO|BBRR (BBRv1)|B2ON (BBRv3)|PRGC (Prague Cubic)]"
+    echo "Usage: $0 [QBIC|RENO|BBRR (BBRv1)|B2ON (BBRv3)|PRGC (Prague Cubic)|LLMX (LLM Modified BBR)]"
     exit 1
 fi
 

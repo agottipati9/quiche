@@ -5,6 +5,7 @@
 #include "quiche/quic/core/congestion_control/send_algorithm_interface.h"
 
 #include "absl/base/attributes.h"
+#include "quiche/quic/core/congestion_control/llm_sender.h"
 #include "quiche/quic/core/congestion_control/bbr2_sender.h"
 #include "quiche/quic/core/congestion_control/bbr_sender.h"
 #include "quiche/quic/core/congestion_control/prague_sender.h"
@@ -31,6 +32,10 @@ SendAlgorithmInterface* SendAlgorithmInterface::Create(
       GetQuicFlag(quic_max_congestion_window);
   switch (congestion_control_type) {
     case kGoogCC:  // GoogCC is not supported by quic/core, fall back to BBR.
+    case kLLM:
+      return new LlmSender(clock->ApproximateNow(), rtt_stats, unacked_packets,
+                          initial_congestion_window, max_congestion_window,
+                          random, stats);
     case kBBR:
       return new BbrSender(clock->ApproximateNow(), rtt_stats, unacked_packets,
                            initial_congestion_window, max_congestion_window,
