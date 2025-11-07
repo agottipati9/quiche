@@ -2314,10 +2314,8 @@ void QuicConnection::OnPacketComplete() {
     return;
   }
 
-  // NOTE: Only log from the client perspective
-  if (perspective_ == Perspective::IS_CLIENT) {
-    LogNetworkMetrics();
-  }
+  // NOTE: Only log from client and server perspective. client for downlink and server for uplink.
+  LogNetworkMetrics();
 
   QUIC_DVLOG(1) << ENDPOINT << "Got"
                 << (SupportsMultiplePacketNumberSpaces()
