@@ -413,6 +413,36 @@ void LlmSender::OnCongestionEvent(bool /*rtt_updated*/,
   QuicByteCount bytes_acked =
       sampler_.total_bytes_acked() - total_bytes_acked_before;
 
+  // ----- START QWEN ARC logic -----
+  // This block executes if any bytes were declared lost in this event.
+  if (bytes_lost > 0) {
+    // Reduce CWND by bytes_lost, flooring at initial_congestion_window_
+    QuicByteCount new_cwnd = (congestion_window_ > bytes_lost)
+                                ? (congestion_window_ - bytes_lost)
+                                : 0;
+    congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
+  }
+
+  // This block executes if any bytes were acknowledged in this event.
+  if (bytes_acked > 0) {
+    bool has_losses = !lost_packets.empty(); // Equivalent to AckEvent->HasLoss
+
+    if (has_losses) {
+      // This replicates the MSQUIC logic of a second CWND reduction on a
+      // SACK, this time by bytes_acked.
+      QuicByteCount new_cwnd = (congestion_window_ > bytes_acked)
+                                  ? (congestion_window_ - bytes_acked)
+                                  : 0;
+      congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
+    } else if (unacked_packets_->bytes_in_flight() < GetTargetCongestionWindow(1.0f) &&
+               !sample.sample_rtt.IsInfinite() && !min_rtt_.IsZero() &&
+               min_rtt_ < sample.sample_rtt) {
+      // Set CWND directly to bytes_acked.
+      congestion_window_ = bytes_acked;
+    }
+  }
+  // ----- END QWEN ARC logic -----
+
   // After the model is updated, recalculate the pacing rate and congestion
   // window.
   CalculatePacingRate(bytes_lost);
