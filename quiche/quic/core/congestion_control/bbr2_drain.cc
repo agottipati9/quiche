@@ -53,7 +53,7 @@ Bbr2DrainMode::DebugState Bbr2DrainMode::ExportDebugState() const {
 
 std::ostream& operator<<(std::ostream& os,
                          const Bbr2DrainMode::DebugState& state) {
-  os << "[DRAIN] drain_target: " << state.drain_target << "\n";
+  // os << "[DRAIN] drain_target: " << state.drain_target << "\n";
   return os;
 }
 

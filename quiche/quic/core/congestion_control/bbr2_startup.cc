@@ -143,11 +143,11 @@ Bbr2StartupMode::DebugState Bbr2StartupMode::ExportDebugState() const {
 
 std::ostream& operator<<(std::ostream& os,
                          const Bbr2StartupMode::DebugState& state) {
-  os << "[STARTUP] full_bandwidth_reached: " << state.full_bandwidth_reached
-     << "\n";
-  os << "[STARTUP] full_bandwidth_baseline: " << state.full_bandwidth_baseline
-     << "\n";
-  os << "[STARTUP] round_trips_without_bandwidth_growth: "
+  // os << "[STARTUP] full_bandwidth_reached: " << state.full_bandwidth_reached
+  //    << "\n";
+  // os << "[STARTUP] full_bandwidth_baseline: " << state.full_bandwidth_baseline
+  //    << "\n";
+  // os << "[STARTUP] round_trips_without_bandwidth_growth: "
      << state.round_trips_without_bandwidth_growth << "\n";
   return os;
 }
