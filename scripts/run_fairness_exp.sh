@@ -148,8 +148,14 @@ CLIENT_COMMANDS+=" echo '--- [Mahi Shell] Latecomer flow started. Waiting for al
 CLIENT_COMMANDS+=" wait "
 
 # --- Part 5e: Execute ---
-echo "Launching clients inside Mahimahi bottleneck..."
-mm-link $UPLINK_TRACE $DOWNLINK_TRACE -- sh -c "$CLIENT_COMMANDS"
+# mm-link $UPLINK_TRACE $DOWNLINK_TRACE -- sh -c "$CLIENT_COMMANDS"
+# We add 26ms of one-way delay (52ms RTT) on top of the ~8ms base RTT.
+# We also set the downlink queue to fifo with our calculated 1xBDP buffer size.
+mm-delay 26 \
+    mm-link $UPLINK_TRACE $DOWNLINK_TRACE \
+        --downlink-queue=droptail \
+        --downlink-queue-args="packets=67" \
+        -- sh -c "$CLIENT_COMMANDS"
 
 echo "All clients have finished."
 
