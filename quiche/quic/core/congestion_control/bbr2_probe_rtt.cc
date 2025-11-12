@@ -72,8 +72,8 @@ Bbr2ProbeRttMode::DebugState Bbr2ProbeRttMode::ExportDebugState() const {
 
 std::ostream& operator<<(std::ostream& os,
                          const Bbr2ProbeRttMode::DebugState& state) {
-  os << "[PROBE_RTT] inflight_target: " << state.inflight_target << "\n";
-  os << "[PROBE_RTT] exit_time: " << state.exit_time << "\n";
+  // os << "[PROBE_RTT] inflight_target: " << state.inflight_target << "\n";
+  // os << "[PROBE_RTT] exit_time: " << state.exit_time << "\n";
   return os;
 }
 

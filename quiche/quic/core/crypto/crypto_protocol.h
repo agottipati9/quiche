@@ -146,6 +146,7 @@ DEFINE_STATIC_QUIC_TAG(BBHI);  // Increase inflight_hi in
                                // PROBE_UP if ever inflight_hi
                                // limited in round
 DEFINE_STATIC_QUIC_TAG(RENO);  // Reno Congestion Control
+DEFINE_STATIC_QUIC_TAG(LLMX);  // LLM modified BBR
 DEFINE_STATIC_QUIC_TAG(BYTE);  // TCP cubic or reno in bytes
 DEFINE_STATIC_QUIC_TAG(IW03);  // Force ICWND to 3
 DEFINE_STATIC_QUIC_TAG(IW10);  // Force ICWND to 10

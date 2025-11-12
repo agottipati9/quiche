@@ -554,15 +554,15 @@ Bbr2Sender::DebugState Bbr2Sender::ExportDebugState() const {
 }
 
 std::ostream& operator<<(std::ostream& os, const Bbr2Sender::DebugState& s) {
-  os << "mode: " << s.mode << "\n";
-  os << "round_trip_count: " << s.round_trip_count << "\n";
-  os << "bandwidth_hi ~ lo ~ est: " << s.bandwidth_hi << " ~ " << s.bandwidth_lo
-     << " ~ " << s.bandwidth_est << "\n";
-  os << "min_rtt: " << s.min_rtt << "\n";
-  os << "min_rtt_timestamp: " << s.min_rtt_timestamp << "\n";
-  os << "congestion_window: " << s.congestion_window << "\n";
-  os << "pacing_rate: " << s.pacing_rate << "\n";
-  os << "last_sample_is_app_limited: " << s.last_sample_is_app_limited << "\n";
+  // os << "mode: " << s.mode << "\n";
+  // os << "round_trip_count: " << s.round_trip_count << "\n";
+  // os << "bandwidth_hi ~ lo ~ est: " << s.bandwidth_hi << " ~ " << s.bandwidth_lo
+  //    << " ~ " << s.bandwidth_est << "\n";
+  // os << "min_rtt: " << s.min_rtt << "\n";
+  // os << "min_rtt_timestamp: " << s.min_rtt_timestamp << "\n";
+  // os << "congestion_window: " << s.congestion_window << "\n";
+  // os << "pacing_rate: " << s.pacing_rate << "\n";
+  // os << "last_sample_is_app_limited: " << s.last_sample_is_app_limited << "\n";
 
   if (s.mode == Bbr2Mode::STARTUP) {
     os << s.startup;

@@ -635,9 +635,9 @@ Bbr2ProbeBwMode::DebugState Bbr2ProbeBwMode::ExportDebugState() const {
 
 std::ostream& operator<<(std::ostream& os,
                          const Bbr2ProbeBwMode::DebugState& state) {
-  os << "[PROBE_BW] phase: " << state.phase << "\n";
-  os << "[PROBE_BW] cycle_start_time: " << state.cycle_start_time << "\n";
-  os << "[PROBE_BW] phase_start_time: " << state.phase_start_time << "\n";
+  // os << "[PROBE_BW] phase: " << state.phase << "\n";
+  // os << "[PROBE_BW] cycle_start_time: " << state.cycle_start_time << "\n";
+  // os << "[PROBE_BW] phase_start_time: " << state.phase_start_time << "\n";
   return os;
 }
 
