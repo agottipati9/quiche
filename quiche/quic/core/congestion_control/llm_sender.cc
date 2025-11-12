@@ -413,34 +413,66 @@ void LlmSender::OnCongestionEvent(bool /*rtt_updated*/,
   QuicByteCount bytes_acked =
       sampler_.total_bytes_acked() - total_bytes_acked_before;
 
+  // START ADDED 4o LOGIC
+  // Adaptive adjustment of CwndGain and PacingGain based on network conditions
+  bool min_rtt_is_valid = (min_rtt_timestamp_ != QuicTime::Zero());
+  if (min_rtt_expired || min_rtt_is_valid) {
+      QuicBandwidth bandwidth_est = BandwidthEstimate();
+      if (!bandwidth_est.IsZero() && bytes_acked > 0 && GetMinRtt() > QuicTime::Delta::Zero()) {
+
+          // MSQUIC BandwidthEst is (bytes/sec) * 8. We multiply to match units.
+          uint64_t bandwidth_est_bps_x8 = bandwidth_est.ToBytesPerSecond() * 8;
+
+          // Porting MSQUIC logic: TotalBytesAcked * kMicroSecsInSec / Bbr->MinRtt
+          // This calculates: (TotalConnectionBytesAcked * 1,000,000) / MinRTT_us
+          // This results in an average throughput (TotalBytes / MinRTT_in_seconds).
+          uint64_t throughput_estimate_bps =
+              (sampler_.total_bytes_acked() * kNumMicrosPerSecond) /
+              GetMinRtt().ToMicroseconds();
+
+          const float kGainStep = 1.0f / 16.0f;  // Equivalent to MSQUIC GAIN_UNIT / 16
+
+          if (throughput_estimate_bps < bandwidth_est_bps_x8) {
+              // If throughput is less than bandwidth estimation, increase gains
+              congestion_window_gain_ = std::min(congestion_window_gain_ + kGainStep, high_gain_);
+              pacing_gain_ = std::min(pacing_gain_ + kGainStep, high_gain_);
+          } else {
+              // If throughput is greater, we may be hitting network limits, decrease gains
+              congestion_window_gain_ = std::max(congestion_window_gain_ - kGainStep, 1.0f);
+              pacing_gain_ = std::max(pacing_gain_ - kGainStep, 1.0f);
+          }
+      }
+  }
+  // END ADDED 4o LOGIC
+
   // ----- START QWEN ARC logic -----
-  // This block executes if any bytes were declared lost in this event.
-  if (bytes_lost > 0) {
-    // Reduce CWND by bytes_lost, flooring at initial_congestion_window_
-    QuicByteCount new_cwnd = (congestion_window_ > bytes_lost)
-                                ? (congestion_window_ - bytes_lost)
-                                : 0;
-    congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
-  }
+  // // This block executes if any bytes were declared lost in this event.
+  // if (bytes_lost > 0) {
+  //   // Reduce CWND by bytes_lost, flooring at initial_congestion_window_
+  //   QuicByteCount new_cwnd = (congestion_window_ > bytes_lost)
+  //                               ? (congestion_window_ - bytes_lost)
+  //                               : 0;
+  //   congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
+  // }
 
-  // This block executes if any bytes were acknowledged in this event.
-  if (bytes_acked > 0) {
-    bool has_losses = !lost_packets.empty(); // Equivalent to AckEvent->HasLoss
+  // // This block executes if any bytes were acknowledged in this event.
+  // if (bytes_acked > 0) {
+  //   bool has_losses = !lost_packets.empty(); // Equivalent to AckEvent->HasLoss
 
-    if (has_losses) {
-      // This replicates the MSQUIC logic of a second CWND reduction on a
-      // SACK, this time by bytes_acked.
-      QuicByteCount new_cwnd = (congestion_window_ > bytes_acked)
-                                  ? (congestion_window_ - bytes_acked)
-                                  : 0;
-      congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
-    } else if (unacked_packets_->bytes_in_flight() < GetTargetCongestionWindow(1.0f) &&
-               !sample.sample_rtt.IsInfinite() && !min_rtt_.IsZero() &&
-               min_rtt_ < sample.sample_rtt) {
-      // Set CWND directly to bytes_acked.
-      congestion_window_ = bytes_acked;
-    }
-  }
+  //   if (has_losses) {
+  //     // This replicates the MSQUIC logic of a second CWND reduction on a
+  //     // SACK, this time by bytes_acked.
+  //     QuicByteCount new_cwnd = (congestion_window_ > bytes_acked)
+  //                                 ? (congestion_window_ - bytes_acked)
+  //                                 : 0;
+  //     congestion_window_ = std::max(new_cwnd, initial_congestion_window_);
+  //   } else if (unacked_packets_->bytes_in_flight() < GetTargetCongestionWindow(1.0f) &&
+  //              !sample.sample_rtt.IsInfinite() && !min_rtt_.IsZero() &&
+  //              min_rtt_ < sample.sample_rtt) {
+  //     // Set CWND directly to bytes_acked.
+  //     congestion_window_ = bytes_acked;
+  //   }
+  // }
   // ----- END QWEN ARC logic -----
 
   // After the model is updated, recalculate the pacing rate and congestion
