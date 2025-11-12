@@ -148,7 +148,7 @@ std::ostream& operator<<(std::ostream& os,
   // os << "[STARTUP] full_bandwidth_baseline: " << state.full_bandwidth_baseline
   //    << "\n";
   // os << "[STARTUP] round_trips_without_bandwidth_growth: "
-     << state.round_trips_without_bandwidth_growth << "\n";
+  //   << state.round_trips_without_bandwidth_growth << "\n";
   return os;
 }
 
